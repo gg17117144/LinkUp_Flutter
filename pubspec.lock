@@ -290,7 +290,7 @@ packages:
     source: hosted
     version: "5.1.22"
   firebase_storage_web:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: firebase_storage_web
       sha256: "3a44aacd38a372efb159f6fe36bb4a7d79823949383816457fd43d3d47602a53"
