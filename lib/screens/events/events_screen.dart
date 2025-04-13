@@ -1,322 +1,138 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:activity_social_app/models/event.dart';
+import 'package:activity_social_app/widgets/event_card.dart';
+import 'package:activity_social_app/screens/event_detail_screen.dart';
 
-class EventsScreen extends StatelessWidget {
-  const EventsScreen({super.key});
+class EventsScreen extends StatefulWidget {
+  const EventsScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('我的活動'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: '主辦的活動'),
-              Tab(text: '參加的活動'),
-            ],
-          ),
+  _EventsScreenState createState() => _EventsScreenState();
+}
+
+class _EventsScreenState extends State<EventsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  List<Event> _hostingEvents = [];
+  List<Event> _participatingEvents = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    // TODO: 從 Firebase 加載活動數據
+    setState(() {
+      _hostingEvents = [
+        Event(
+          id: '1',
+          title: '週末登山活動',
+          description: '一起來爬山，享受大自然的美好！',
+          location: '陽明山國家公園',
+          dateTime: DateTime.now().add(const Duration(days: 2)),
+          maxParticipants: 10,
+          currentParticipants: 5,
+          hostId: 'user1',
+          hostName: '王小明',
+          imageUrl: 'https://example.com/hiking.jpg',
+          category: '戶外活動',
+          status: EventStatus.registrationOpen,
         ),
-        body: TabBarView(
-          children: [
-            _buildEventsList(context, 'hosting'),
-            _buildEventsList(context, 'participating'),
-          ],
+        Event(
+          id: '2',
+          title: '桌遊之夜',
+          description: '一起來玩桌遊，認識新朋友！',
+          location: '台北市信義區',
+          dateTime: DateTime.now().add(const Duration(days: 3)),
+          maxParticipants: 8,
+          currentParticipants: 6,
+          hostId: 'user1',
+          hostName: '王小明',
+          imageUrl: 'https://example.com/boardgame.jpg',
+          category: '室內活動',
+          status: EventStatus.registrationOpen,
         ),
+      ];
+
+      _participatingEvents = [
+        Event(
+          id: '3',
+          title: '攝影工作坊',
+          description: '專業攝影師指導，學習攝影技巧！',
+          location: '台北市大安區',
+          dateTime: DateTime.now().add(const Duration(days: 5)),
+          maxParticipants: 15,
+          currentParticipants: 12,
+          hostId: 'user2',
+          hostName: '李小華',
+          imageUrl: 'https://example.com/photography.jpg',
+          category: '學習',
+          status: EventStatus.registrationOpen,
+        ),
+      ];
+    });
+  }
+
+  void _showEventDetails(Event event) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EventDetailScreen(event: event),
       ),
     );
   }
 
-  Widget _buildEventsList(BuildContext context, String type) {
-    final events = [
-      {
-        'title': '週末登山活動',
-        'location': '陽明山',
-        'date': '2024-04-20',
-        'time': '09:00',
-        'image': 'https://picsum.photos/300/200?random=1',
-        'participants': 12,
-        'maxParticipants': 20,
-        'description': '一起來享受大自然的清新空氣，挑戰自我極限！',
-        'status': '進行中',
-      },
-      {
-        'title': '咖啡品嚐會',
-        'location': '信義區',
-        'date': '2024-04-21',
-        'time': '14:00',
-        'image': 'https://picsum.photos/300/200?random=2',
-        'participants': 8,
-        'maxParticipants': 15,
-        'description': '專業咖啡師帶領，品嚐來自世界各地的精品咖啡。',
-        'status': '報名中',
-      },
-      {
-        'title': '桌遊之夜',
-        'location': '大安區',
-        'date': '2024-04-22',
-        'time': '19:00',
-        'image': 'https://picsum.photos/300/200?random=3',
-        'participants': 6,
-        'maxParticipants': 10,
-        'description': '輕鬆愉快的桌遊聚會，認識新朋友的好機會！',
-        'status': '已額滿',
-      },
-    ];
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('我的活動'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: '我主辦的'),
+            Tab(text: '我參加的'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildEventsList(_hostingEvents),
+          _buildEventsList(_participatingEvents),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // TODO: 導航到創建活動頁面
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildEventsList(List<Event> events) {
+    if (events.isEmpty) {
+      return const Center(
+        child: Text('目前沒有活動'),
+      );
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: events.length,
       itemBuilder: (context, index) {
         final event = events[index];
-        return GestureDetector(
-          onTap: () {
-            _showEventDetails(context, event);
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                      child: CachedNetworkImage(
-                        imageUrl: event['image'] as String,
-                        height: 160,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey[200],
-                        ),
-                        errorWidget: (context, url, error) => const Icon(Icons.error),
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          event['status'] as String,
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event['title'] as String,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            event['location'] as String,
-                            style: const TextStyle(
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.access_time,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${event['date']} ${event['time']}',
-                            style: const TextStyle(
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                // TODO: Navigate to chat
-                              },
-                              icon: const Icon(Icons.chat),
-                              label: const Text('聊天室'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: () {
-                                _showEventDetails(context, event);
-                              },
-                              icon: const Icon(Icons.info),
-                              label: const Text('詳情'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: EventCard(
+            event: event,
+            onTap: () => _showEventDetails(event),
           ),
         );
       },
-    );
-  }
-
-  void _showEventDetails(BuildContext context, Map<String, dynamic> event) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CachedNetworkImage(
-                        imageUrl: event['image'] as String,
-                        width: double.infinity,
-                        height: 200,
-                        fit: BoxFit.cover,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              event['title'] as String,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on),
-                                const SizedBox(width: 8),
-                                Text(event['location'] as String),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Icon(Icons.calendar_today),
-                                const SizedBox(width: 8),
-                                Text('${event['date']} ${event['time']}'),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Icon(Icons.people),
-                                const SizedBox(width: 8),
-                                Text(
-                                    '${event['participants']}/${event['maxParticipants']} 人'),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              '活動描述',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(event['description'] as String),
-                            const SizedBox(height: 24),
-                            if (event['status'] == '報名中')
-                              SizedBox(
-                                width: double.infinity,
-                                child: FilledButton(
-                                  onPressed: () {
-                                    // TODO: Implement join event
-                                  },
-                                  child: const Text('參加活動'),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
