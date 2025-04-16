@@ -1,3 +1,22 @@
+/// 個人資料頁面
+/// 
+/// 此頁面用於顯示和管理用戶的個人資料，包含以下主要部分：
+/// 1. 用戶基本信息（頭像、名稱、電子郵件）
+/// 2. 活動統計（主辦活動數、參加活動數、關注數）
+/// 3. 興趣標籤
+/// 4. 功能按鈕（編輯資料、通知、幫助、登出）
+/// 
+/// 主要功能：
+/// 1. 展示用戶的基本信息和統計數據
+/// 2. 顯示用戶的興趣標籤
+/// 3. 提供個人資料管理功能
+/// 4. 支持登出操作
+/// 
+/// 界面特點：
+/// 1. 使用卡片式設計展示各類信息
+/// 2. 清晰的視覺層次和分區
+/// 3. 直觀的操作入口
+
 import 'package:flutter/material.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -6,6 +25,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // 設置頁面標題和設置按鈕
       appBar: AppBar(
         title: const Text('Profile'),
         actions: [
@@ -17,15 +37,18 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+      // 使用 ListView 支持滾動
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // 用戶頭像
           const CircleAvatar(
             radius: 50,
             backgroundColor: Colors.grey,
             child: Icon(Icons.person, size: 50),
           ),
           const SizedBox(height: 16),
+          // 用戶名稱
           const Text(
             'User Name',
             textAlign: TextAlign.center,
@@ -35,6 +58,7 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+          // 用戶電子郵件
           Text(
             'user@email.com',
             textAlign: TextAlign.center,
@@ -43,16 +67,25 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+          // 統計數據行
           _buildStatsRow(),
           const SizedBox(height: 24),
+          // 興趣標籤
           _buildInterestTags(),
           const SizedBox(height: 24),
+          // 功能按鈕列表
           _buildActionButtons(),
         ],
       ),
     );
   }
 
+  /// 構建統計數據行
+  /// 
+  /// 顯示用戶的活動統計數據，包括：
+  /// - 主辦的活動數量
+  /// - 參加的活動數量
+  /// - 關注的用戶數量
   Widget _buildStatsRow() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -64,6 +97,10 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  /// 構建單個統計項
+  /// 
+  /// @param label 統計項標籤
+  /// @param value 統計值
   Widget _buildStatItem(String label, String value) {
     return Column(
       children: [
@@ -84,6 +121,9 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  /// 構建興趣標籤
+  /// 
+  /// 使用 Wrap 和 Chip 組件展示用戶的興趣標籤
   Widget _buildInterestTags() {
     return Wrap(
       spacing: 8,
@@ -104,6 +144,13 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  /// 構建功能按鈕列表
+  /// 
+  /// 包含以下功能按鈕：
+  /// 1. 編輯個人資料
+  /// 2. 通知設置
+  /// 3. 幫助與支持
+  /// 4. 登出
   Widget _buildActionButtons() {
     return Column(
       children: [

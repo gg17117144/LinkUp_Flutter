@@ -1,3 +1,20 @@
+/// 首頁
+/// 
+/// 此頁面是應用程式的主頁面，包含兩個主要部分：
+/// 1. 附近活動：顯示用戶所在位置附近的活動
+/// 2. 推薦活動：根據用戶興趣推薦的活動
+/// 
+/// 主要功能：
+/// 1. 提供搜索功能
+/// 2. 展示附近活動（橫向滾動）
+/// 3. 展示推薦活動（垂直列表）
+/// 4. 支持查看活動詳情
+/// 
+/// 界面特點：
+/// 1. 使用卡片式設計展示活動
+/// 2. 包含活動圖片、標題、地點、時間等信息
+/// 3. 支持圖片緩存和加載狀態顯示
+
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -7,6 +24,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // 設置頁面標題和搜索按鈕
       appBar: AppBar(
         title: const Text('LinkUp'),
         actions: [
@@ -18,12 +36,15 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
+      // 使用 SingleChildScrollView 支持整體滾動
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 附近活動部分
             _buildNearbyEvents(context),
             const SizedBox(height: 16),
+            // 推薦活動部分
             _buildRecommendedEvents(context),
           ],
         ),
@@ -31,7 +52,9 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// 構建附近活動部分
   Widget _buildNearbyEvents(BuildContext context) {
+    // 模擬附近活動數據
     final nearbyEvents = [
       {
         'title': '週末登山活動',
@@ -62,6 +85,7 @@ class HomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 附近活動標題
         const Padding(
           padding: EdgeInsets.all(16.0),
           child: Text(
@@ -72,6 +96,7 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ),
+        // 附近活動列表（橫向滾動）
         SizedBox(
           height: 220,
           child: ListView.builder(
@@ -102,6 +127,7 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // 活動圖片
                       ClipRRect(
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(12),
@@ -117,11 +143,13 @@ class HomeScreen extends StatelessWidget {
                           errorWidget: (context, url, error) => const Icon(Icons.error),
                         ),
                       ),
+                      // 活動信息
                       Padding(
                         padding: const EdgeInsets.all(12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // 活動標題
                             Text(
                               event['title'] as String,
                               style: const TextStyle(
@@ -130,6 +158,7 @@ class HomeScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 4),
+                            // 活動地點
                             Row(
                               children: [
                                 const Icon(
@@ -147,6 +176,7 @@ class HomeScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 4),
+                            // 活動時間和參與人數
                             Row(
                               children: [
                                 const Icon(
@@ -194,7 +224,9 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// 構建推薦活動部分
   Widget _buildRecommendedEvents(BuildContext context) {
+    // 模擬推薦活動數據
     final recommendedEvents = [
       {
         'title': '攝影工作坊',
@@ -225,6 +257,7 @@ class HomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 推薦活動標題
         const Padding(
           padding: EdgeInsets.all(16.0),
           child: Text(
@@ -235,6 +268,7 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ),
+        // 推薦活動列表
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),

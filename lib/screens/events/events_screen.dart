@@ -1,3 +1,20 @@
+/// 活動頁面
+/// 
+/// 此頁面用於顯示用戶的活動列表，分為兩個標籤頁：
+/// 1. 我主辦的活動
+/// 2. 我參加的活動
+/// 
+/// 主要功能：
+/// 1. 使用 TabBar 切換不同類型的活動列表
+/// 2. 顯示活動卡片，包含活動的基本信息
+/// 3. 提供查看活動詳情的功能
+/// 4. 提供創建新活動的入口
+/// 
+/// 數據管理：
+/// 1. 使用 StatefulWidget 管理活動列表狀態
+/// 2. 提供加載活動數據的方法
+/// 3. 支持活動詳情的導航
+
 import 'package:flutter/material.dart';
 import 'package:activity_social_app/models/event.dart';
 import 'package:activity_social_app/widgets/event_card.dart';
@@ -11,20 +28,31 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> with SingleTickerProviderStateMixin {
+  /// TabController 用於管理標籤頁切換
   late TabController _tabController;
+  
+  /// 用戶主辦的活動列表
   List<Event> _hostingEvents = [];
+  
+  /// 用戶參加的活動列表
   List<Event> _participatingEvents = [];
 
   @override
   void initState() {
     super.initState();
+    // 初始化 TabController，設置兩個標籤頁
     _tabController = TabController(length: 2, vsync: this);
+    // 加載活動數據
     _loadEvents();
   }
 
+  /// 加載活動數據
+  /// 
+  /// 目前使用模擬數據，後續需要從 Firebase 加載實際數據
   Future<void> _loadEvents() async {
     // TODO: 從 Firebase 加載活動數據
     setState(() {
+      // 模擬主辦的活動數據
       _hostingEvents = [
         Event(
           id: '1',
@@ -56,6 +84,7 @@ class _EventsScreenState extends State<EventsScreen> with SingleTickerProviderSt
         ),
       ];
 
+      // 模擬參加的活動數據
       _participatingEvents = [
         Event(
           id: '3',
@@ -75,6 +104,7 @@ class _EventsScreenState extends State<EventsScreen> with SingleTickerProviderSt
     });
   }
 
+  /// 顯示活動詳情
   void _showEventDetails(Event event) {
     Navigator.push(
       context,
@@ -87,6 +117,7 @@ class _EventsScreenState extends State<EventsScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // 設置頁面標題和標籤欄
       appBar: AppBar(
         title: const Text('我的活動'),
         bottom: TabBar(
@@ -97,6 +128,7 @@ class _EventsScreenState extends State<EventsScreen> with SingleTickerProviderSt
           ],
         ),
       ),
+      // 標籤頁內容
       body: TabBarView(
         controller: _tabController,
         children: [
@@ -104,6 +136,7 @@ class _EventsScreenState extends State<EventsScreen> with SingleTickerProviderSt
           _buildEventsList(_participatingEvents),
         ],
       ),
+      // 創建新活動的按鈕
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // TODO: 導航到創建活動頁面
@@ -113,13 +146,16 @@ class _EventsScreenState extends State<EventsScreen> with SingleTickerProviderSt
     );
   }
 
+  /// 構建活動列表
   Widget _buildEventsList(List<Event> events) {
+    // 如果沒有活動，顯示提示信息
     if (events.isEmpty) {
       return const Center(
         child: Text('目前沒有活動'),
       );
     }
 
+    // 使用 ListView 顯示活動列表
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: events.length,
