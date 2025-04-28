@@ -18,6 +18,7 @@
 /// 3. 直觀的操作入口
 
 import 'package:flutter/material.dart';
+import 'package:activity_social_app/models/mock_data.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -27,7 +28,7 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       // 設置頁面標題和設置按鈕
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('個人資料'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -42,17 +43,21 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // 用戶頭像
-          const CircleAvatar(
+          CircleAvatar(
             radius: 50,
-            backgroundColor: Colors.grey,
-            child: Icon(Icons.person, size: 50),
+            backgroundImage: currentUser.avatarUrl != null
+                ? NetworkImage(currentUser.avatarUrl!)
+                : null,
+            child: currentUser.avatarUrl == null
+                ? const Icon(Icons.person, size: 50)
+                : null,
           ),
           const SizedBox(height: 16),
           // 用戶名稱
-          const Text(
-            'User Name',
+          Text(
+            currentUser.name,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
@@ -60,13 +65,24 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 8),
           // 用戶電子郵件
           Text(
-            'user@email.com',
+            currentUser.email,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          // 用戶簡介
+          if (currentUser.bio != null) ...[
+            Text(
+              currentUser.bio!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           // 統計數據行
           _buildStatsRow(),
           const SizedBox(height: 24),
@@ -90,9 +106,9 @@ class ProfileScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildStatItem('Events Hosted', '12'),
-        _buildStatItem('Events Joined', '34'),
-        _buildStatItem('Following', '56'),
+        _buildStatItem('主辦活動', currentUser.hostingEventCount.toString()),
+        _buildStatItem('參加活動', currentUser.participatingEventCount.toString()),
+        _buildStatItem('關注', currentUser.followingCount.toString()),
       ],
     );
   }
@@ -128,14 +144,7 @@ class ProfileScreen extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: [
-        'Sports',
-        'Music',
-        'Technology',
-        'Food',
-        'Art',
-        'Travel',
-      ].map((interest) {
+      children: currentUser.interests.map((interest) {
         return Chip(
           label: Text(interest),
           backgroundColor: Colors.blue[100],
@@ -156,7 +165,7 @@ class ProfileScreen extends StatelessWidget {
       children: [
         ListTile(
           leading: const Icon(Icons.edit),
-          title: const Text('Edit Profile'),
+          title: const Text('編輯個人資料'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             // TODO: Navigate to edit profile
@@ -164,7 +173,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         ListTile(
           leading: const Icon(Icons.notifications),
-          title: const Text('Notifications'),
+          title: const Text('通知設置'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             // TODO: Navigate to notifications
@@ -172,7 +181,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         ListTile(
           leading: const Icon(Icons.help),
-          title: const Text('Help & Support'),
+          title: const Text('幫助與支持'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             // TODO: Navigate to help
@@ -181,7 +190,7 @@ class ProfileScreen extends StatelessWidget {
         ListTile(
           leading: const Icon(Icons.logout, color: Colors.red),
           title: const Text(
-            'Logout',
+            '登出',
             style: TextStyle(color: Colors.red),
           ),
           onTap: () {
