@@ -17,16 +17,77 @@
 
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../dev_tools_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _tapCount = 0;
+  DateTime? _lastTapTime;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  void _handleTitleTap() {
+    final now = DateTime.now();
+    if (_lastTapTime != null && now.difference(_lastTapTime!) < const Duration(seconds: 2)) {
+      setState(() {
+        _tapCount++;
+      });
+    } else {
+      setState(() {
+        _tapCount = 1;
+      });
+    }
+    _lastTapTime = now;
+
+    if (_tapCount >= 7) {
+      _showDeveloperOptions();
+      setState(() {
+        _tapCount = 0;
+      });
+    }
+  }
+
+  void _showDeveloperOptions() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('開發者選項'),
+        content: const Text('您要進入開發者工具嗎？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DevToolsScreen()),
+              );
+            },
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // 設置頁面標題和搜索按鈕
       appBar: AppBar(
-        title: const Text('LinkUp'),
+        title: GestureDetector(
+          onTap: _handleTitleTap,
+          child: const Text('LinkUp'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -54,38 +115,9 @@ class HomeScreen extends StatelessWidget {
 
   /// 構建附近活動部分
   Widget _buildNearbyEvents(BuildContext context) {
-    // 模擬附近活動數據
-    final nearbyEvents = [
-      {
-        'title': '週末登山活動',
-        'location': '陽明山',
-        'date': '2024-04-20',
-        'image': 'https://picsum.photos/300/200?random=1',
-        'participants': 12,
-        'description': '一起來享受大自然的清新空氣，挑戰自我極限！',
-      },
-      {
-        'title': '咖啡品嚐會',
-        'location': '信義區',
-        'date': '2024-04-21',
-        'image': 'https://picsum.photos/300/200?random=2',
-        'participants': 8,
-        'description': '專業咖啡師帶領，品嚐來自世界各地的精品咖啡。',
-      },
-      {
-        'title': '桌遊之夜',
-        'location': '大安區',
-        'date': '2024-04-22',
-        'image': 'https://picsum.photos/300/200?random=3',
-        'participants': 6,
-        'description': '輕鬆愉快的桌遊聚會，認識新朋友的好機會！',
-      },
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 附近活動標題
         const Padding(
           padding: EdgeInsets.all(16.0),
           child: Text(
@@ -96,126 +128,135 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ),
-        // 附近活動列表（橫向滾動）
         SizedBox(
           height: 220,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: nearbyEvents.length,
-            itemBuilder: (context, index) {
-              final event = nearbyEvents[index];
-              return GestureDetector(
-                onTap: () {
-                  _showEventDetails(context, event);
-                },
-                child: Container(
-                  width: 280,
-                  margin: const EdgeInsets.only(right: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        spreadRadius: 1,
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 活動圖片
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
-                        ),
-                        child: CachedNetworkImage(
-                          imageUrl: event['image'] as String,
-                          height: 120,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Colors.grey[200],
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _firestore.collection('events').limit(3).snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final events = snapshot.data?.docs ?? [];
+
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: events.length,
+                itemBuilder: (context, index) {
+                  final event = events[index].data() as Map<String, dynamic>;
+                  return GestureDetector(
+                    onTap: () {
+                      _showEventDetails(context, event);
+                    },
+                    child: Container(
+                      width: 280,
+                      margin: const EdgeInsets.only(right: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.2),
+                            spreadRadius: 1,
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
                           ),
-                          errorWidget: (context, url, error) => const Icon(Icons.error),
-                        ),
+                        ],
                       ),
-                      // 活動信息
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 活動標題
-                            Text(
-                              event['title'] as String,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(12),
+                            ),
+                            child: CachedNetworkImage(
+                              imageUrl: event['imageUrl'] as String,
+                              height: 120,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: Colors.grey[200],
                               ),
+                              errorWidget: (context, url, error) => const Icon(Icons.error),
                             ),
-                            const SizedBox(height: 4),
-                            // 活動地點
-                            Row(
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  size: 16,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 4),
                                 Text(
-                                  event['location'] as String,
+                                  event['title'] as String,
                                   style: const TextStyle(
-                                    color: Colors.grey,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            // 活動時間和參與人數
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  event['date'] as String,
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const Spacer(),
+                                const SizedBox(height: 4),
                                 Row(
                                   children: [
                                     const Icon(
-                                      Icons.people,
+                                      Icons.location_on,
                                       size: 16,
                                       color: Colors.grey,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '${event['participants']} 人參加',
+                                      event['location'] as String,
                                       style: const TextStyle(
                                         color: Colors.grey,
                                       ),
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.calendar_today,
+                                      size: 16,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      event['dateTime'] as String,
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.people,
+                                          size: 16,
+                                          color: Colors.grey,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${event['currentParticipants']} 人參加',
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -226,38 +267,9 @@ class HomeScreen extends StatelessWidget {
 
   /// 構建推薦活動部分
   Widget _buildRecommendedEvents(BuildContext context) {
-    // 模擬推薦活動數據
-    final recommendedEvents = [
-      {
-        'title': '攝影工作坊',
-        'location': '松山文創園區',
-        'date': '2024-04-25',
-        'image': 'https://picsum.photos/300/200?random=4',
-        'participants': 15,
-        'description': '專業攝影師指導，學習構圖與光線運用技巧。',
-      },
-      {
-        'title': '瑜伽課程',
-        'location': '中山區',
-        'date': '2024-04-26',
-        'image': 'https://picsum.photos/300/200?random=5',
-        'participants': 10,
-        'description': '放鬆身心，提升柔軟度與平衡感。',
-      },
-      {
-        'title': '讀書會',
-        'location': '公館',
-        'date': '2024-04-27',
-        'image': 'https://picsum.photos/300/200?random=6',
-        'participants': 8,
-        'description': '分享閱讀心得，交流不同觀點。',
-      },
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 推薦活動標題
         const Padding(
           padding: EdgeInsets.all(16.0),
           child: Text(
@@ -268,120 +280,134 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ),
-        // 推薦活動列表
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: recommendedEvents.length,
-          itemBuilder: (context, index) {
-            final event = recommendedEvents[index];
-            return GestureDetector(
-              onTap: () {
-                _showEventDetails(context, event);
-              },
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 1,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.horizontal(
-                        left: Radius.circular(12),
-                      ),
-                      child: CachedNetworkImage(
-                        imageUrl: event['image'] as String,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey[200],
+        StreamBuilder<QuerySnapshot>(
+          stream: _firestore.collection('events').limit(3).snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final events = snapshot.data?.docs ?? [];
+
+            return ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: events.length,
+              itemBuilder: (context, index) {
+                final event = events[index].data() as Map<String, dynamic>;
+                return GestureDetector(
+                  onTap: () {
+                    _showEventDetails(context, event);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
                         ),
-                        errorWidget: (context, url, error) => const Icon(Icons.error),
-                      ),
+                      ],
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              event['title'] as String,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.horizontal(
+                            left: Radius.circular(12),
+                          ),
+                          child: CachedNetworkImage(
+                            imageUrl: event['imageUrl'] as String,
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: Colors.grey[200],
                             ),
-                            const SizedBox(height: 4),
-                            Row(
+                            errorWidget: (context, url, error) => const Icon(Icons.error),
+                          ),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  size: 16,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 4),
                                 Text(
-                                  event['location'] as String,
+                                  event['title'] as String,
                                   style: const TextStyle(
-                                    color: Colors.grey,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  event['date'] as String,
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const Spacer(),
+                                const SizedBox(height: 4),
                                 Row(
                                   children: [
                                     const Icon(
-                                      Icons.people,
+                                      Icons.location_on,
                                       size: 16,
                                       color: Colors.grey,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '${event['participants']} 人參加',
+                                      event['location'] as String,
                                       style: const TextStyle(
                                         color: Colors.grey,
                                       ),
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.calendar_today,
+                                      size: 16,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      event['dateTime'] as String,
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.people,
+                                          size: 16,
+                                          color: Colors.grey,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${event['currentParticipants']} 人參加',
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         ),
@@ -421,7 +447,7 @@ class HomeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CachedNetworkImage(
-                        imageUrl: event['image'] as String,
+                        imageUrl: event['imageUrl'] as String,
                         width: double.infinity,
                         height: 200,
                         fit: BoxFit.cover,
@@ -451,7 +477,7 @@ class HomeScreen extends StatelessWidget {
                               children: [
                                 const Icon(Icons.calendar_today),
                                 const SizedBox(width: 8),
-                                Text(event['date'] as String),
+                                Text(event['dateTime'] as String),
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -459,7 +485,7 @@ class HomeScreen extends StatelessWidget {
                               children: [
                                 const Icon(Icons.people),
                                 const SizedBox(width: 8),
-                                Text('${event['participants']} 人參加'),
+                                Text('${event['currentParticipants']} 人參加'),
                               ],
                             ),
                             const SizedBox(height: 16),
