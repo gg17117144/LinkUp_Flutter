@@ -16,6 +16,7 @@
 /// 4. 管理用戶的偏好設置
 
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// 用戶模型類
 class User {
@@ -71,28 +72,26 @@ class User {
     required this.updatedAt,
   });
 
-  /// 從JSON創建用戶實例
-  factory User.fromJson(Map<String, dynamic> json) {
+  factory User.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return User(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
-      avatarUrl: json['avatarUrl'] as String?,
-      bio: json['bio'] as String?,
-      hostingEventIds: List<String>.from(json['hostingEventIds'] as List),
-      participatingEventIds: List<String>.from(json['participatingEventIds'] as List),
-      followingIds: List<String>.from(json['followingIds'] as List),
-      followerIds: List<String>.from(json['followerIds'] as List),
-      interests: List<String>.from(json['interests'] as List),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      id: doc.id,
+      name: data['name'] ?? '',
+      email: data['email'] ?? '',
+      avatarUrl: data['avatarUrl'],
+      bio: data['bio'],
+      hostingEventIds: List<String>.from(data['hostingEventIds'] ?? []),
+      participatingEventIds: List<String>.from(data['participatingEventIds'] ?? []),
+      followingIds: List<String>.from(data['followingIds'] ?? []),
+      followerIds: List<String>.from(data['followerIds'] ?? []),
+      interests: List<String>.from(data['interests'] ?? []),
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
   }
 
-  /// 將用戶實例轉換為JSON
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toFirestore() {
     return {
-      'id': id,
       'name': name,
       'email': email,
       'avatarUrl': avatarUrl,
@@ -102,8 +101,8 @@ class User {
       'followingIds': followingIds,
       'followerIds': followerIds,
       'interests': interests,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
