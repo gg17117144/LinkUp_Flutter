@@ -18,13 +18,66 @@
 /// 3. 直觀的操作入口
 
 import 'package:flutter/material.dart';
-import 'package:activity_social_app/models/mock_data.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/user_service.dart';
+import '../../models/user.dart';
+import '../auth/login_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final UserService _userService = UserService();
+  User? _currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final firebaseUser = auth.FirebaseAuth.instance.currentUser;
+    if (firebaseUser != null) {
+      final user = await _userService.getUser(firebaseUser.uid);
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+        });
+      }
+    }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await auth.FirebaseAuth.instance.signOut();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('登出失敗')),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_currentUser == null) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       // 設置頁面標題和設置按鈕
       appBar: AppBar(
@@ -45,17 +98,17 @@ class ProfileScreen extends StatelessWidget {
           // 用戶頭像
           CircleAvatar(
             radius: 50,
-            backgroundImage: currentUser.avatarUrl != null
-                ? NetworkImage(currentUser.avatarUrl!)
+            backgroundImage: _currentUser!.avatarUrl != null
+                ? NetworkImage(_currentUser!.avatarUrl!)
                 : null,
-            child: currentUser.avatarUrl == null
+            child: _currentUser!.avatarUrl == null
                 ? const Icon(Icons.person, size: 50)
                 : null,
           ),
           const SizedBox(height: 16),
           // 用戶名稱
           Text(
-            currentUser.name,
+            _currentUser!.name,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 24,
@@ -65,7 +118,7 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 8),
           // 用戶電子郵件
           Text(
-            currentUser.email,
+            _currentUser!.email,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey[600],
@@ -73,9 +126,9 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           // 用戶簡介
-          if (currentUser.bio != null) ...[
+          if (_currentUser!.bio != null) ...[
             Text(
-              currentUser.bio!,
+              _currentUser!.bio!,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey[600],
@@ -106,9 +159,9 @@ class ProfileScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildStatItem('主辦活動', currentUser.hostingEventCount.toString()),
-        _buildStatItem('參加活動', currentUser.participatingEventCount.toString()),
-        _buildStatItem('關注', currentUser.followingCount.toString()),
+        _buildStatItem('主辦活動', _currentUser!.hostingEventCount.toString()),
+        _buildStatItem('參加活動', _currentUser!.participatingEventCount.toString()),
+        _buildStatItem('關注', _currentUser!.followingCount.toString()),
       ],
     );
   }
@@ -144,7 +197,7 @@ class ProfileScreen extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: currentUser.interests.map((interest) {
+      children: _currentUser!.interests.map((interest) {
         return Chip(
           label: Text(interest),
           backgroundColor: Colors.blue[100],
@@ -193,9 +246,7 @@ class ProfileScreen extends StatelessWidget {
             '登出',
             style: TextStyle(color: Colors.red),
           ),
-          onTap: () {
-            // TODO: Implement logout
-          },
+          onTap: _logout,
         ),
       ],
     );
